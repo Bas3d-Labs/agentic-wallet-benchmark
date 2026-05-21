@@ -1,0 +1,5 @@
+{
+  "network": "Tempo testnet (Moderato)",
+  "chainId": 42431,
+  "note": "Run `pnpm run` to populate this file."
+}

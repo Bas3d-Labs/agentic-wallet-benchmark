@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+research/
+docs/spikes/
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+deployments/local.json

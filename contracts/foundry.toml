@@ -1,0 +1,8 @@
+[profile.default]
+src = "."
+out = "out"
+libs = []
+solc_version = "0.8.24"
+
+[rpc_endpoints]
+moderato = "${TEMPO_RPC_URL}"

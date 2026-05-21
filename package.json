@@ -1,0 +1,26 @@
+{
+  "name": "agentic-wallet-benchmark",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible adversarial benchmark for agentic wallet spend policies on Tempo Moderato",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "run": "tsx src/runner.ts",
+    "run:baseline": "tsx src/runner.ts --adapters tempo-access-keys",
+    "deploy:intermediary": "cd contracts && forge create Intermediary.sol:Intermediary --constructor-args $EVIL_ADDRESS --rpc-url ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz} --private-key $OWNER_PRIVATE_KEY",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "viem": "^2.31.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
