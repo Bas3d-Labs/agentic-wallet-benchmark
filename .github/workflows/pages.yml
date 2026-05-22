@@ -9,7 +9,7 @@ permissions:
   id-token: write
 jobs:
   deploy:
-    if: false # set to true when ready to publish GitHub Pages
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

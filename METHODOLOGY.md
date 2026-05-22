@@ -9,7 +9,7 @@ Results are observed measurements on testnet — not production deployments.
 |-------|----------|
 | Token | pathUSD (`0x20c0000000000000000000000000000000000000`) |
 | Per-tx cap | 10 pathUSD |
-| Window cap | 25 pathUSD / 24h rolling window |
+| Window cap | 25 pathUSD / 5-minute rolling window |
 | Allowlist | Service recipient `SVC` only (plus intermediary for sub-test c) |
 
 Wallet adapters translate this `PolicySpec` into each provider's primitives. Token-level TIP-403 policies are out of scope for v0.
@@ -24,11 +24,17 @@ Deploy Intermediary with `EVIL` as constructor arg so on-chain forward target ma
 
 ## Adversary tests
 
+### 0. Within policy (positive control)
+
+One transfer of `perTxCap` to **SVC** on a fresh agent.  
+**Pass:** **settled**. **Fail:** blocked or error (wallet unusable for legitimate spend).  
+Recorded in results; excluded from policy survival rate. Setup friction is measured through this transfer.
+
 ### 1. Cap split
 
 `n = floor(windowCap / perTxCap) + 1` transfers of `perTxCap` to **SVC**.  
-**Pass:** at least one transfer is **blocked** (window cap enforced).  
-**Fail:** all `n` settle.
+**Pass:** the first `n - 1` transfers **settle** and the `n`th is **blocked** (window cap enforced without blocking all traffic).  
+**Fail:** all `n` settle, or fewer than `n - 1` settle before the overflow attempt.
 
 ### 2. Allowlist evasion
 
@@ -44,6 +50,17 @@ Off-chain adapters: simulate signing/policy backend outage, then attempt within-
 **Pass:** blocked or error. **Fail:** settles.
 
 On-chain adapters (e.g. tempo-access-keys): **N/A** — favorable; policy persists without a backend.
+
+### Tempo access keys — documented limitations (probes)
+
+Run only for `tempo-access-keys` after adversary tests. A probe **confirms** a limitation when on-chain behavior matches the documented gap (does not affect policy survival).
+
+| Probe | What it shows |
+|-------|----------------|
+| `no-per-tx-cap` | Transfer `perTxCap + 1` to **SVC** settles (no separate per-tx limit; one limit per token) |
+| `window-not-per-tx` | Single transfer of `2 × perTxCap` (20 pathUSD) to **SVC** settles (window only) |
+| `allowlist-not-enforced` | Pay **EVIL** directly settles when call scopes are omitted (limits-only policy) |
+| `allowlist-forward-settlement` | Allowlisted intermediary + `depositAndForward` forwards to immutable **EVIL** |
 
 ## Scoring
 
@@ -70,7 +87,7 @@ Wall-clock from `setup()` start to first successful within-policy transfer, plus
 
 1. Identical adversary code for every adapter.
 2. Fresh `setup` → `fund` → `setPolicy` before each test.
-3. Fixed test order: cap-split → allowlist-evasion → fail-open.
+3. Fixed test order: within-policy (during setup) → cap-split → allowlist-evasion → fail-open; tempo limitation probes after adversary tests.
 4. Provider-specific logic stays inside adapters only.
 
 ## Caveats
@@ -85,20 +102,21 @@ Condensed from internal integration research (maintained outside this repo).
 
 ### `tempo-access-keys` (baseline)
 
-Implemented. **Enforcement:** protocol (AccountKeychain precompile). Headless: owner key + faucet only; fail-open N/A.
+Implemented. **Enforcement:** protocol (AccountKeychain). Headless owner key + faucet; fail-open N/A.  
+**Note:** The keychain allows one spending limit per token; the adapter maps the reference policy to a **5-minute rolling window cap** (`windowCap`). Transfers use `perTxCap` amounts; per-tx enforcement is not a separate on-chain limit. **Call scopes** for allowlist enforcement are opt-in (`useCallScopes`); the default harness path uses limits-only because scoped TIP-20 transfers revert on Moderato today (see limitation probes).
 
-### `enact` (M3)
+### `enact`
 
-**Enforcement:** protocol (expected). **Surface:** `enact init` + JSON mode (`enact -t session`); map `PolicySpec` to session/keychain limits; sign via viem `token.transferSync` or CLI. **Risks:** passkey `init` is interactive; revoke CLI TBD. **Status:** stub — proceed with CLI + viem hybrid.
+Implemented. **Enforcement:** protocol via Enact session agent key (`AGENT_PRIVATE_KEY`) authorized by root (`AGENT_ROOT_ADDRESS` must match `OWNER_PRIVATE_KEY`). **Revoke:** access key revoke on-chain. **Manual:** `enact init` (passkey) before first run.
 
-### `sponge` (M3)
+### `sponge`
 
-**Enforcement:** TBD (off-chain-signing or smart-contract). **Surface:** SDK + dashboard (confirm Tempo Moderato `42431` at implementation). **Risks:** docs/signup required before SDK surface is known. **Status:** stub — blocked until M3 signup confirms API.
+Implemented. **Enforcement:** off-chain-signing (`@paysponge/sdk`). **Policy:** fleet/agent spending limits + allowlist REST when `SPONGE_MASTER_KEY` set. **Revoke:** zero daily limit via platform API. **Fail-open:** simulated fetch outage.
 
-### `privy` (M4)
+### `privy`
 
-**Enforcement:** off-chain-signing. **Surface:** server wallet API (app ID + secret). **Risks:** policy evaluated at sign time — fail-open test applies. **Status:** stub.
+Implemented. **Enforcement:** off-chain-signing (`@privy-io/node` + viem tempo). **Policy:** Privy policy rules on `eth_sendTransaction` / `transfer`. **Revoke:** delete policy. **Fail-open:** invalid `PRIVY_API_URL`.
 
-### `turnkey` (M4)
+### `turnkey`
 
-**Enforcement:** off-chain-signing. **Surface:** policy engine + org API keys. **Risks:** same fail-open semantics as Privy; revocation = policy/wallet disable analogue. **Status:** stub.
+Implemented. **Enforcement:** off-chain-signing (Turnkey policy engine + `@turnkey/viem`). **Policy:** `createPolicy` with `tempo.tx` conditions. **Revoke:** `deletePolicy`. **Requires:** pre-created `TURNKEY_SIGN_WITH` key in org.

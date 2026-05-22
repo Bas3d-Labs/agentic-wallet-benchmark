@@ -5,26 +5,30 @@ import { SpongeAdapter } from './sponge.js';
 import { TempoAccessKeysAdapter } from './tempo-access-keys.js';
 import { TurnkeyAdapter } from './turnkey.js';
 
+const ADAPTER_FACTORIES: Record<string, () => WalletAdapter> = {
+  'tempo-access-keys': () => new TempoAccessKeysAdapter(),
+  enact: () => new EnactAdapter(),
+  sponge: () => new SpongeAdapter(),
+  privy: () => new PrivyAdapter(),
+  turnkey: () => new TurnkeyAdapter(),
+};
+
+export function getAllAdapterNames(): string[] {
+  return Object.keys(ADAPTER_FACTORIES);
+}
+
 export function getAllAdapters(): WalletAdapter[] {
-  return [
-    new TempoAccessKeysAdapter(),
-    new EnactAdapter(),
-    new SpongeAdapter(),
-    new PrivyAdapter(),
-    new TurnkeyAdapter(),
-  ];
+  return getAllAdapterNames().map((name) => createAdapter(name));
+}
+
+export function createAdapter(name: string): WalletAdapter {
+  const factory = ADAPTER_FACTORIES[name];
+  if (!factory) throw new Error(`Unknown adapter: ${name}`);
+  return factory();
 }
 
 export function getAdaptersByName(names: string[]): WalletAdapter[] {
-  const all = getAllAdapters();
-  const set = new Set(names);
-  const selected = all.filter((a) => set.has(a.name));
-  if (selected.length !== names.length) {
-    const found = new Set(selected.map((a) => a.name));
-    const missing = names.filter((n) => !found.has(n));
-    throw new Error(`Unknown adapter(s): ${missing.join(', ')}`);
-  }
-  return selected;
+  return names.map((name) => createAdapter(name));
 }
 
 export { TempoAccessKeysAdapter } from './tempo-access-keys.js';

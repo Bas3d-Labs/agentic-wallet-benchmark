@@ -54,6 +54,16 @@ function renderMarkdown(results: BenchmarkResults): string {
       lines.push(`- **${test.test}**: ${test.status === 'N/A' ? 'N/A' : test.passed ? 'PASS' : 'FAIL'}`);
       if (test.note) lines.push(`  - ${test.note}`);
     }
+    if (run.limitationProbes?.length) {
+      lines.push('', '**Documented limitations (tempo access keys):**', '');
+      for (const probe of run.limitationProbes) {
+        const tag = probe.limitationConfirmed ? 'confirmed' : 'not observed';
+        lines.push(
+          `- **${probe.id}** (${tag}): expected \`${probe.expectedOutcome}\`, observed \`${probe.observed}\``,
+        );
+        lines.push(`  - ${probe.title}`);
+      }
+    }
     lines.push('');
   }
 

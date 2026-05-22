@@ -1,5 +1,165 @@
 {
   "network": "Tempo testnet (Moderato)",
   "chainId": 42431,
-  "note": "Run `pnpm run` to populate this file."
+  "blockHeight": "18715530",
+  "timestamp": "2026-05-22T08:59:45.443Z",
+  "commitHash": "86be2a7ae95ce048936b2819323f56bfb1228f42",
+  "policy": {
+    "token": "0x20c0000000000000000000000000000000000000",
+    "perTxCap": "10000000",
+    "windowCap": "25000000",
+    "windowPeriodSeconds": 300,
+    "allowlist": [
+      "0x649b91c422Fa79FeCe0a64d62692baD66EA1C0bD"
+    ]
+  },
+  "scenario": {
+    "serviceRecipient": "0x649b91c422Fa79FeCe0a64d62692baD66EA1C0bD",
+    "adversaryRecipient": "0x00000000000000000000000000000000000000e7",
+    "intermediary": "0xf40a6aea7240116528d5c31695ae0aa77764482b"
+  },
+  "adapters": [
+    {
+      "adapter": "tempo-access-keys",
+      "enforcementLayer": "protocol",
+      "setupFrictionMs": 5627,
+      "integrationLineCount": 120,
+      "manualStepCount": 0,
+      "tests": [
+        {
+          "test": "within-policy",
+          "passed": true,
+          "outcome": {
+            "status": "settled",
+            "txHash": "0x835e0ab9f37314c9461be6c9b9fb588a9b326ad1a72fe22c959e61be41a0cc67",
+            "latencyMs": 1670
+          },
+          "note": "In-policy transfer settled"
+        },
+        {
+          "test": "cap-split",
+          "passed": true,
+          "outcomes": [
+            {
+              "status": "settled",
+              "txHash": "0xb060c463b62a31fea35b3ed6719995a5dd8da1c81f16cc27f4c32aa84b8ca651",
+              "latencyMs": 1103
+            },
+            {
+              "status": "settled",
+              "txHash": "0xc20cb340079d9f0ae9f1c4d379fabfd12f9ff08581f68d7954ccf19ffe859e11",
+              "latencyMs": 1093
+            },
+            {
+              "status": "blocked",
+              "reason": "Transaction with hash \"0x9d283c4fbf9078aee9f105ac58f48f6c352719083d37c97a5bdcbcec32b797b8\" reverted.\n\nThe receipt marked the transaction as \"reverted\". This could mean that the function on the contract you are trying to call threw an error.\n \nYou can attempt to extract the revert reason by:\n- calling the `simulateContract` or `simulateCalls` Action with the `abi` and `functionName` of the contract\n- using the `call` Action with raw `data`\n \nRequest Arguments:\n  from:  0x5Ec805c79753D0875af972945F0123eD5D449101\n  to:    0x20c0000000000000000000000000000000000000\n  data:  0xa9059cbb000000000000000000000000649b91c422fa79fece0a64d62692bad66ea1c0bd0000000000000000000000000000000000000000000000000000000000989680\n  gas:   1500000\n \nContract Call:\n  address:   0x20c0000000000000000000000000000000000000\n  function:  transfer(address to, uint256 amount)\n  args:              (0x649b91c422Fa79FeCe0a64d62692baD66EA1C0bD, 10000000)\n  sender:    0x5Ec805c79753D0875af972945F0123eD5D449101\n\nDocs: https://viem.sh/docs/contract/writeContract\nVersion: viem@2.50.4"
+            }
+          ],
+          "note": "2 in-window transfer(s) settled, overflow blocked"
+        },
+        {
+          "test": "allowlist-evasion",
+          "passed": false,
+          "subResults": {
+            "a": {
+              "id": "a",
+              "expected": "blocked",
+              "outcome": {
+                "status": "settled",
+                "txHash": "0x3194e116cfe7942b5264df2fdfce411824bedce46b47938bc3075a746e71b4d0",
+                "latencyMs": 1117
+              }
+            },
+            "b": {
+              "id": "b",
+              "expected": "blocked",
+              "outcome": {
+                "status": "settled",
+                "txHash": "0xa240410fe8ac479802da25900bbdcc0093c326d43d1d2f6803c77bc82009024b",
+                "latencyMs": 1755
+              }
+            },
+            "c": {
+              "id": "c",
+              "expected": "blocked",
+              "outcome": {
+                "status": "settled",
+                "txHash": "0x940f34859d2bac4d52a5c59cc48dac6b8cbb5699aa8cbf209f17551949f9d369",
+                "latencyMs": 2691
+              }
+            }
+          }
+        },
+        {
+          "test": "fail-open",
+          "passed": true,
+          "status": "N/A",
+          "note": "Policy enforced on-chain; persists with no backend (favorable)"
+        }
+      ],
+      "limitationProbes": [
+        {
+          "id": "no-per-tx-cap",
+          "title": "No separate per-tx spending limit",
+          "description": "Reference policy defines a 10 pathUSD per-tx cap, but AccountKeychain allows one limit per token (rolling window only). A transfer one unit above per-tx cap but under the window cap can settle.",
+          "expectedOutcome": "settled",
+          "observed": "settled",
+          "outcome": {
+            "status": "settled",
+            "txHash": "0x6243c429eab9bc7f4c45cf681f4bafc4de425496b261c8b95e341f645e214c3e",
+            "latencyMs": 1026
+          },
+          "limitationConfirmed": true
+        },
+        {
+          "id": "window-not-per-tx",
+          "title": "Window cap without per-tx cap",
+          "description": "A single transfer larger than the reference per-tx cap (20 pathUSD) but below the rolling window cap (25) can settle because only the window limit is enforced on-chain.",
+          "expectedOutcome": "settled",
+          "observed": "settled",
+          "outcome": {
+            "status": "settled",
+            "txHash": "0x673fad4509dff5a8a8b584e1eeb6ca599894293444fb143beb1b8bb5d4418646",
+            "latencyMs": 1130
+          },
+          "limitationConfirmed": true
+        },
+        {
+          "id": "allowlist-not-enforced",
+          "title": "Allowlist not enforced without call scopes",
+          "description": "Reference policy lists only SVC, but setPolicy omits call scopes (required for working TIP-20 transfers on Moderato). Paying EVIL directly can settle.",
+          "expectedOutcome": "settled",
+          "observed": "settled",
+          "outcome": {
+            "status": "settled",
+            "txHash": "0x8ae830df11f3a0d4b53908889d1cbaf207fc5bd5ecb88984e9e8ca142b6ddbc1",
+            "latencyMs": 1057
+          },
+          "limitationConfirmed": true
+        },
+        {
+          "id": "allowlist-forward-settlement",
+          "title": "Forward to immutable evil via allowlisted intermediary",
+          "description": "Sub-test (c) with intermediary allowlisted and depositAndForward scoped. If this settles, only the immediate recipient was checked and EVIL (Intermediary.forwardTo) received funds. Blocked means stronger enforcement or insufficient allowance.",
+          "expectedOutcome": "settled",
+          "observed": "settled",
+          "outcome": {
+            "status": "settled",
+            "txHash": "0x0b789c31696f1c01dfb988959a3f197961a768f42b5e8a5073841e8246894715",
+            "latencyMs": 1630
+          },
+          "limitationConfirmed": true
+        }
+      ],
+      "revocationLatencyMs": 1839
+    }
+  ],
+  "scores": {
+    "tempo-access-keys": {
+      "policySurvivalRate": 0.25,
+      "revocationLatencyMs": 1839,
+      "setupFrictionMs": 5627,
+      "enforcementLayer": "protocol"
+    }
+  }
 }
