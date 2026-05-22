@@ -2,60 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Agentic Wallet Benchmark — Tempo Moderato</title>
-  <style>
-    :root { font-family: system-ui, sans-serif; color: #111; background: #fafafa; }
-    body { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
-    h1 { font-size: 1.5rem; }
-    .meta { color: #555; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    table { width: 100%; border-collapse: collapse; background: #fff; }
-    th, td { border: 1px solid #ddd; padding: 0.5rem 0.75rem; text-align: left; }
-    th { background: #f0f0f0; }
-    .warn { color: #b45309; font-weight: 600; }
-    #error { color: #b91c1c; }
-  </style>
+  <meta http-equiv="refresh" content="0; url=../" />
+  <title>Redirect — Agentic Wallet Benchmark</title>
 </head>
 <body>
-  <h1>Agentic Wallet Benchmark</h1>
-  <p class="meta" id="meta">Loading results…</p>
-  <p id="error"></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Wallet</th>
-        <th>Enforcement</th>
-        <th>Policy survival</th>
-        <th>Revocation (ms)</th>
-        <th>Setup friction (ms)</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
-  <script>
-    async function load() {
-      const res = await fetch('../results/results.json');
-      if (!res.ok) throw new Error('Could not load results.json — run the benchmark first.');
-      const data = await res.json();
-      document.getElementById('meta').textContent =
-        `${data.network} · chain ${data.chainId} · block ${data.blockHeight} · ${data.timestamp}` +
-        (data.commitHash ? ` · ${data.commitHash.slice(0, 7)}` : '');
-      const tbody = document.getElementById('tbody');
-      for (const [name, s] of Object.entries(data.scores)) {
-        const pct = (s.policySurvivalRate * 100).toFixed(1);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${name}</td>
-          <td>${s.enforcementLayer}</td>
-          <td class="${s.policySurvivalRate < 1 ? 'warn' : ''}">${pct}%</td>
-          <td>${s.revocationLatencyMs ?? 'timeout'}</td>
-          <td>${s.setupFrictionMs}</td>`;
-        tbody.appendChild(tr);
-      }
-    }
-    load().catch((e) => {
-      document.getElementById('error').textContent = e.message;
-    });
-  </script>
+  <p><a href="../">Open benchmark results</a></p>
 </body>
 </html>
