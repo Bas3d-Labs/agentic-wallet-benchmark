@@ -10,8 +10,8 @@
   "scripts": {
     "benchmark": "tsx src/runner.ts",
     "benchmark:baseline": "tsx src/runner.ts --adapters tempo-access-keys",
-    "setup:testnet": "npm run contracts:build && tsx scripts/setup-testnet.ts",
-    "contracts:build": "export PATH=\"$HOME/.foundry/bin:$PATH\" && cd contracts && forge build",
+    "setup:testnet": "tsx scripts/setup-testnet.ts",
+    "contracts:build": "export PATH=\"$HOME/.foundry/bin:$PATH\" && cd contracts && forge build && node ../scripts/sync-intermediary-artifact.mjs",
     "deploy:intermediary": "export PATH=\"$HOME/.foundry/bin:$PATH\" && cd contracts && forge create Intermediary.sol:Intermediary --constructor-args $EVIL_ADDRESS --rpc-url ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz} --private-key $OWNER_PRIVATE_KEY",
     "typecheck": "tsc --noEmit",
     "build": "tsc"

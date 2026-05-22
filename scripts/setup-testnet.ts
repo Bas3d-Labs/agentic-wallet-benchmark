@@ -2,7 +2,7 @@
  * One-time Moderato setup: fund owner via faucet, deploy Intermediary, write .env.
  * Usage: npm run setup:testnet
  *
- * Requires: `forge build` in contracts/ (run once; uses ~/.foundry/bin on PATH).
+ * Uses committed bytecode in `contracts/artifacts/` (refreshed by `npm run contracts:build`).
  * Uses testnet RPC only — no Anvil.
  */
 import 'dotenv/config';
@@ -13,7 +13,7 @@ import { getAddress } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { createTempoPublicClient, createTempoWalletClient } from '../src/chain/client.js';
 import { DEFAULT_EVIL_ADDRESS } from '../src/config.js';
-import artifact from '../contracts/out/Intermediary.sol/Intermediary.json' with { type: 'json' };
+import artifact from '../contracts/artifacts/Intermediary.json' with { type: 'json' };
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const rpc = process.env.TEMPO_RPC_URL ?? 'https://rpc.moderato.tempo.xyz';
