@@ -1,8 +1,15 @@
 import 'dotenv/config';
 import { execSync } from 'node:child_process';
 import { PATH_USD, REVOCATION_POLL_MS, REVOCATION_TIMEOUT_MS } from './config.js';
-import { runAllowlistEvasion, runCapSplit, runFailOpen } from './adversary/index.js';
-import { getAdaptersByName, getAllAdapters } from './adapters/index.js';
+import {
+  runAllowlistEvasion,
+  runCapSplit,
+  runFailOpen,
+  runTempoLimitationProbes,
+  runWithinPolicy,
+} from './adversary/index.js';
+import { assertAdapterCredentials } from './adapters/credentials.js';
+import { getAdaptersByName, getAllAdapterNames } from './adapters/index.js';
 import {
   fundOwnerFromFaucet,
   TempoAccessKeysAdapter,
@@ -35,7 +42,7 @@ function parseArgs(): { adapters: string[] } {
   if (idx >= 0 && args[idx + 1]) {
     return { adapters: args[idx + 1].split(',').map((s) => s.trim()) };
   }
-  return { adapters: getAllAdapters().map((a) => a.name) };
+  return { adapters: getAllAdapterNames() };
 }
 
 function assertEnv(): void {
@@ -57,23 +64,29 @@ function getCommitHash(): string | null {
 async function prepareAdapter(
   adapter: WalletAdapter,
   spec: ReturnType<typeof getReferencePolicySpec>,
-): Promise<number> {
+): Promise<{ setupFrictionMs: number; withinPolicy: Awaited<ReturnType<typeof runWithinPolicy>> }> {
   const start = Date.now();
   await adapter.setup();
   await adapter.fund(spec.token, AGENT_FUND_AMOUNT);
   await adapter.setPolicy(spec);
 
-  const probe = await adapter.attemptTransfer({
-    to: getServiceRecipient(),
-    token: spec.token,
-    amount: spec.perTxCap / 2n || 1n,
-  });
-  if (probe.status === 'error') {
+  const svc = getServiceRecipient();
+  const withinPolicy = await runWithinPolicy(adapter, spec, svc);
+  if (!withinPolicy.passed) {
+    const detail =
+      withinPolicy.outcome?.status === 'error'
+        ? withinPolicy.outcome.error
+        : withinPolicy.outcome?.status === 'blocked'
+          ? withinPolicy.outcome.reason
+          : withinPolicy.note;
     throw new Error(
-      `${adapter.name}: within-policy probe failed: ${probe.error}`,
+      `${adapter.name}: within-policy failed: ${detail ?? 'unknown'}`,
     );
   }
-  return Date.now() - start;
+  return {
+    setupFrictionMs: Date.now() - start,
+    withinPolicy,
+  };
 }
 
 async function runTestsForAdapter(
@@ -96,6 +109,8 @@ async function runTestsForAdapter(
     await adapter.fund(spec.token, AGENT_FUND_AMOUNT);
     await adapter.setPolicy(spec);
     tests.push(await run());
+    // Pace root-account txs (authorize/fund) to avoid mempool replacement errors.
+    await new Promise((r) => setTimeout(r, 1000));
   }
 
   return tests;
@@ -132,9 +147,28 @@ async function measureRevocationLatency(
 async function runAdapter(adapter: WalletAdapter): Promise<AdapterRunResult> {
   console.log(`\n=== ${adapter.name} ===`);
   const spec = getReferencePolicySpec();
-  const setupFrictionMs = await prepareAdapter(adapter, spec);
-  const tests = await runTestsForAdapter(adapter);
+  const evil = getAdversaryRecipient();
+  const { intermediary } = getScenarioAddresses();
+  const svc = getServiceRecipient();
+
+  const { setupFrictionMs, withinPolicy } = await prepareAdapter(adapter, spec);
+  const tests = [withinPolicy, ...(await runTestsForAdapter(adapter))];
   const revocationLatencyMs = await measureRevocationLatency(adapter);
+
+  let limitationProbes: Awaited<ReturnType<typeof runTempoLimitationProbes>> | undefined;
+  if (adapter.name === 'tempo-access-keys') {
+    try {
+      limitationProbes = await runTempoLimitationProbes(
+        adapter,
+        spec,
+        svc,
+        intermediary,
+        evil,
+      );
+    } catch (err) {
+      console.warn(`${adapter.name}: limitation probes failed:`, err);
+    }
+  }
 
   return {
     adapter: adapter.name,
@@ -143,6 +177,7 @@ async function runAdapter(adapter: WalletAdapter): Promise<AdapterRunResult> {
     integrationLineCount: adapter.integrationLineCount ?? 0,
     manualStepCount: adapter.manualStepCount ?? 0,
     tests,
+    limitationProbes,
     revocationLatencyMs,
   };
 }
@@ -150,6 +185,7 @@ async function runAdapter(adapter: WalletAdapter): Promise<AdapterRunResult> {
 async function main(): Promise<void> {
   assertEnv();
   const { adapters: adapterNames } = parseArgs();
+  assertAdapterCredentials(adapterNames);
   const adapters = getAdaptersByName(adapterNames);
 
   if (adapterNames.includes('tempo-access-keys')) {

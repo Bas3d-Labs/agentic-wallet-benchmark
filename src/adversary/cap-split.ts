@@ -1,4 +1,13 @@
-import type { PolicySpec, AdversaryTestResult, WalletAdapter } from '../types.js';
+import type {
+  PolicySpec,
+  AdversaryTestResult,
+  TransferOutcome,
+  WalletAdapter,
+} from '../types.js';
+
+function isBlockedOutcome(outcome: TransferOutcome): boolean {
+  return outcome.status === 'blocked' || outcome.status === 'error';
+}
 
 export async function runCapSplit(
   adapter: WalletAdapter,
@@ -18,10 +27,23 @@ export async function runCapSplit(
     );
   }
 
-  const blocked = outcomes.some((o) => o.status === 'blocked');
+  const expectedSettled = n - 1;
+  const settledPrefix = outcomes
+    .slice(0, expectedSettled)
+    .every((o) => o.status === 'settled');
+  const last = outcomes[n - 1];
+  const lastBlocked = last ? isBlockedOutcome(last) : false;
+  const passed = settledPrefix && lastBlocked;
+
+  const settledCount = outcomes.filter((o) => o.status === 'settled').length;
+  const blockedCount = outcomes.filter((o) => isBlockedOutcome(o)).length;
+
   return {
     test: 'cap-split',
-    passed: blocked,
+    passed,
     outcomes,
+    note: passed
+      ? `${expectedSettled} in-window transfer(s) settled, overflow blocked`
+      : `Expected ${expectedSettled} settled then 1 blocked; got ${settledCount} settled, ${blockedCount} blocked`,
   };
 }

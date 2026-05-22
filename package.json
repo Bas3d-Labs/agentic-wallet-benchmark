@@ -8,13 +8,19 @@
     "node": ">=20"
   },
   "scripts": {
-    "run": "tsx src/runner.ts",
-    "run:baseline": "tsx src/runner.ts --adapters tempo-access-keys",
-    "deploy:intermediary": "cd contracts && forge create Intermediary.sol:Intermediary --constructor-args $EVIL_ADDRESS --rpc-url ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz} --private-key $OWNER_PRIVATE_KEY",
+    "benchmark": "tsx src/runner.ts",
+    "benchmark:baseline": "tsx src/runner.ts --adapters tempo-access-keys",
+    "setup:testnet": "tsx scripts/setup-testnet.ts",
+    "contracts:build": "export PATH=\"$HOME/.foundry/bin:$PATH\" && cd contracts && forge build && node ../scripts/sync-intermediary-artifact.mjs",
+    "deploy:intermediary": "export PATH=\"$HOME/.foundry/bin:$PATH\" && cd contracts && forge create Intermediary.sol:Intermediary --constructor-args $EVIL_ADDRESS --rpc-url ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz} --private-key $OWNER_PRIVATE_KEY",
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },
   "dependencies": {
+    "@paysponge/sdk": "^0.1.98",
+    "@privy-io/node": "^0.18.0",
+    "@turnkey/sdk-server": "^6.0.0",
+    "@turnkey/viem": "^0.14.29",
     "dotenv": "^16.4.7",
     "viem": "^2.31.0"
   },

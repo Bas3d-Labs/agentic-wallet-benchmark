@@ -5,7 +5,7 @@ export function computePolicySurvivalRate(run: AdapterRunResult): number {
   let total = 0;
 
   for (const test of run.tests) {
-    if (test.status === 'N/A') continue;
+    if (test.status === 'N/A' || test.test === 'within-policy') continue;
 
     if (test.test === 'cap-split') {
       total += 1;
@@ -17,7 +17,12 @@ export function computePolicySurvivalRate(run: AdapterRunResult): number {
       for (const sub of Object.values(test.subResults)) {
         if (sub.expected === 'blocked') {
           total += 1;
-          if (sub.outcome.status === 'blocked') blocked += 1;
+          if (
+            sub.outcome.status === 'blocked' ||
+            sub.outcome.status === 'error'
+          ) {
+            blocked += 1;
+          }
         }
       }
       continue;

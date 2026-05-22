@@ -9,11 +9,18 @@ export type EnforcementLayer =
 export interface PolicySpec {
   token: Address;
   perTxCap: bigint;
-  /** Rolling window spend cap (24h in v0). */
+  /** Rolling window spend cap (enforced limit for the period). */
   windowCap: bigint;
-  /** Window length in seconds (default 86400). */
+  /** Window length in seconds (reference policy: 5 minutes). */
   windowPeriodSeconds: number;
   allowlist: Address[];
+  /**
+   * When true, attach AccountKeychain call scopes for allowlist enforcement.
+   * Default false: on Moderato, scoped TIP-20 transfers currently revert (see limitation probes).
+   */
+  useCallScopes?: boolean;
+  /** Contracts that may receive approve + depositAndForward (e.g. intermediary for sub-test c). */
+  scopeContracts?: Address[];
 }
 
 export type TransferOutcome =
@@ -63,6 +70,18 @@ export interface AdversaryTestResult {
   outcome?: TransferOutcome;
 }
 
+/** Documents a known adapter/protocol gap; confirmed when observed matches expected. */
+export interface LimitationProbeResult {
+  id: string;
+  title: string;
+  description: string;
+  /** Behavior that indicates the documented limitation exists. */
+  expectedOutcome: 'blocked' | 'settled';
+  observed: 'blocked' | 'settled' | 'error';
+  outcome: TransferOutcome;
+  limitationConfirmed: boolean;
+}
+
 export interface AdapterRunResult {
   adapter: string;
   enforcementLayer: EnforcementLayer;
@@ -70,6 +89,7 @@ export interface AdapterRunResult {
   integrationLineCount: number;
   manualStepCount: number;
   tests: AdversaryTestResult[];
+  limitationProbes?: LimitationProbeResult[];
   revocationLatencyMs: number | null;
 }
 
