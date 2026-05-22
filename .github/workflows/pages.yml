@@ -1,20 +1,42 @@
-# Enable after first results commit (post-M5)
+# Publishes site/ + results/ to GitHub Pages (static report).
+# First run: repo Settings → Pages → Build and deployment → Source: GitHub Actions.
 name: Deploy results site
+
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
         with:
+          # Creates/enables Pages for GitHub Actions when not configured yet (needs admin).
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # site/index.html fetches ../results/results.json
           path: .
-      - uses: actions/deploy-pages@v4
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -214,7 +214,9 @@ Metrics are reported separately; there is no combined “winner” score.
 
 ### Static site
 
-Open `site/index.html` locally, or publish via GitHub Pages (`.github/workflows/pages.yml` deploys the repo root on pushes to `main` when enabled).
+Open `site/index.html` locally, or publish via GitHub Pages.
+
+**GitHub Pages (one-time):** In the repo go to **Settings → Pages → Build and deployment** and set **Source** to **GitHub Actions**. Then pushes to `main` (or manual **Deploy results site** workflow) publish `site/` and `results/`. If deploy fails with “Get Pages site failed”, Pages is not enabled yet — complete that setting or re-run the workflow after an admin enables it.
 
 ### CI
 
