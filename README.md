@@ -59,7 +59,7 @@ Dev UX research (signup friction, manual steps) and provider integration spikes 
 ## Results
 
 After a run: `results/results.json`, `results/results.md`.  
-Static report: open `site/index.html` locally. For GitHub Pages, enable **Settings → Pages → GitHub Actions** once, then see `.github/workflows/pages.yml`.
+Static report: open `index.html` locally (or `site/` redirect). **GitHub Pages:** `https://bas3dlabs.github.io/agentic-wallet-benchmark/` after deploy (Settings → Pages → GitHub Actions).
 
 ## Docs
 

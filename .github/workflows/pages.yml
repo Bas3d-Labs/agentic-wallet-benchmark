@@ -1,4 +1,4 @@
-# Publishes site/ + results/ to GitHub Pages (static report).
+# Publishes results dashboard to GitHub Pages.
 # First run: repo Settings → Pages → Build and deployment → Source: GitHub Actions.
 name: Deploy results site
 
@@ -28,14 +28,18 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
-          # Creates/enables Pages for GitHub Actions when not configured yet (needs admin).
           enablement: true
+
+      - name: Prepare static site
+        run: |
+          mkdir -p .pages-publish
+          cp index.html .nojekyll .pages-publish/
+          cp -r results .pages-publish/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # site/index.html fetches ../results/results.json
-          path: .
+          path: .pages-publish
 
       - name: Deploy to GitHub Pages
         id: deployment
